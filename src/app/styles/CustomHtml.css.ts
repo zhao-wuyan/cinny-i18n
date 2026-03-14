@@ -253,8 +253,26 @@ export const TableWrapper = style([
   DefaultReset,
   MarginSpaced,
   {
-    overflowX: 'auto',
+    overflow: 'auto',
     maxWidth: '100%',
+    scrollbarWidth: 'none',
+    selectors: {
+      '&::-webkit-scrollbar': {
+        width: 0,
+        height: 0,
+      },
+      '&:hover': {
+        scrollbarWidth: 'thin',
+      },
+      '&:hover::-webkit-scrollbar': {
+        width: toRem(6),
+        height: toRem(6),
+      },
+      '&:hover::-webkit-scrollbar-thumb': {
+        backgroundColor: color.SurfaceVariant.ContainerLine,
+        borderRadius: config.radii.R300,
+      },
+    },
   },
 ]);
 

@@ -4,7 +4,9 @@ import React, {
   ReactEventHandler,
   Suspense,
   lazy,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import parse, {
@@ -280,6 +282,33 @@ const isGfmTableText = (text: string): boolean => {
   return bodyLines.every((line) => line.includes('|'));
 };
 
+function AutoScrollTableWrapper({ children }: { children: React.ReactNode }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const raf = requestAnimationFrame(() => {
+      const table = el.querySelector('table');
+      if (!table) return;
+      const body = table.querySelectorAll('tbody tr');
+      const rows = body.length || table.querySelectorAll('tr').length;
+      if (rows <= 50) return;
+      const headH = table.querySelector('thead')?.getBoundingClientRect().height ?? 0;
+      const rowEl = (body[0] as HTMLElement | undefined) ?? (table.querySelector('tr') as HTMLElement | null);
+      const rowH = rowEl?.getBoundingClientRect().height ?? 0;
+      if (rowH > 0) el.style.maxHeight = `${Math.ceil(headH + rowH * 50) + 2}px`;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className={css.TableWrapper}>
+      {children}
+    </div>
+  );
+}
+
 export function CodeBlock({
   children,
   opts,
@@ -483,11 +512,11 @@ export const getReactCustomHtmlParser = (
 
         if (name === 'table') {
           return (
-            <div className={css.TableWrapper}>
+            <AutoScrollTableWrapper>
               <table {...props} className={classNames(props.className, css.Table)}>
                 {domToReact(children, opts)}
               </table>
-            </div>
+            </AutoScrollTableWrapper>
           );
         }
 
