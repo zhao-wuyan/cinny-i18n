@@ -258,19 +258,30 @@ export const TableWrapper = style([
     scrollbarWidth: 'none',
     selectors: {
       '&::-webkit-scrollbar': {
+        width: toRem(6),
+        height: toRem(6),
+        backgroundColor: 'transparent',
+      },
+      '&::-webkit-scrollbar-track': {
+        backgroundColor: 'transparent',
+      },
+      '&::-webkit-scrollbar-thumb': {
+        backgroundColor: 'transparent',
+        borderRadius: config.radii.R300,
+      },
+      '&::-webkit-scrollbar-corner': {
+        backgroundColor: 'transparent',
+      },
+      '&::-webkit-scrollbar-button': {
         width: 0,
         height: 0,
+        display: 'none',
       },
       '&:hover': {
         scrollbarWidth: 'thin',
       },
-      '&:hover::-webkit-scrollbar': {
-        width: toRem(6),
-        height: toRem(6),
-      },
       '&:hover::-webkit-scrollbar-thumb': {
         backgroundColor: color.SurfaceVariant.ContainerLine,
-        borderRadius: config.radii.R300,
       },
     },
   },
