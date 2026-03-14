@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {
+import parse, {
   Element,
   Text as DOMText,
   HTMLReactParserOptions,
@@ -22,6 +22,7 @@ import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChildNode } from 'domhandler';
 import * as css from '../styles/CustomHtml.css';
+import { sanitizeCustomHtml } from '../utils/sanitize';
 import {
   getMxIdLocalPart,
   getCanonicalAliasRoomId,
@@ -31,6 +32,7 @@ import {
 import { getMemberDisplayName } from '../utils/room';
 import { EMOJI_PATTERN, sanitizeForRegex, URL_NEG_LB } from '../utils/regex';
 import { getHexcodeForEmoji, getShortcodeFor } from './emoji';
+import { parseBlockMD, parseInlineMD } from './markdown';
 import { findAndReplace } from '../utils/findAndReplace';
 import {
   parseMatrixToRoom,
@@ -224,6 +226,60 @@ const extractTextFromChildren = (nodes: ChildNode[]): string => {
   return text;
 };
 
+const splitTableRow = (rowText: string): string[] => {
+  const trimmed = rowText.trim();
+  const raw = trimmed.startsWith('|') ? trimmed.slice(1) : trimmed;
+  const content = raw.endsWith('|') ? raw.slice(0, -1) : raw;
+
+  const cells: string[] = [];
+  let current = '';
+
+  for (let i = 0; i < content.length; i += 1) {
+    const ch = content[i];
+    const next = content[i + 1];
+    if (ch === '\\' && next === '|') {
+      current += '|';
+      i += 1;
+      continue;
+    }
+    if (ch === '|') {
+      cells.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  cells.push(current);
+  return cells;
+};
+
+const isTableDelimiterCell = (cell: string): boolean => {
+  const trimmed = cell.trim();
+  if (trimmed === '') return false;
+  return /^:?-{3,}:?$/.test(trimmed);
+};
+
+const isGfmTableText = (text: string): boolean => {
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  if (normalized === '') return false;
+
+  const lines = normalized.split('\n').filter((l) => l.trim() !== '');
+  if (lines.length < 2) return false;
+
+  const [headerLine, delimiterLine, ...bodyLines] = lines;
+  if (!headerLine.includes('|') || !delimiterLine.includes('|')) return false;
+
+  const headerCells = splitTableRow(headerLine);
+  const delimiterCells = splitTableRow(delimiterLine);
+  if (headerCells.length < 2 || delimiterCells.length < 2) return false;
+  if (!delimiterCells.every(isTableDelimiterCell)) return false;
+
+  const colCount = Math.max(headerCells.length, delimiterCells.length);
+  if (colCount < 2) return false;
+
+  return bodyLines.every((line) => line.includes('|'));
+};
+
 export function CodeBlock({
   children,
   opts,
@@ -383,6 +439,11 @@ export const getReactCustomHtmlParser = (
         }
 
         if (name === 'pre') {
+          const preText = extractTextFromChildren(children);
+          if (isGfmTableText(preText)) {
+            const tableHtml = sanitizeCustomHtml(parseBlockMD(preText, parseInlineMD));
+            return <>{parse(tableHtml, opts)}</>;
+          }
           return <CodeBlock opts={opts}>{children}</CodeBlock>;
         }
 
