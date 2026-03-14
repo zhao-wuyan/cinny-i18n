@@ -440,9 +440,20 @@ export const getReactCustomHtmlParser = (
 
         if (name === 'pre') {
           const preText = extractTextFromChildren(children);
-          if (isGfmTableText(preText)) {
+          const code = children[0];
+          const languageClass =
+            code instanceof Element && code.name === 'code' ? code.attribs.class : undefined;
+          const isTableLanguage =
+            typeof languageClass === 'string' &&
+            (languageClass === 'language-table' ||
+              languageClass.includes('language-markdown-table') ||
+              languageClass.includes('language-gfm-table'));
+
+          if (isTableLanguage || isGfmTableText(preText)) {
             const tableHtml = sanitizeCustomHtml(parseBlockMD(preText, parseInlineMD));
-            return <>{parse(tableHtml, opts)}</>;
+            if (tableHtml.includes('<table')) {
+              return <>{parse(tableHtml, opts)}</>;
+            }
           }
           return <CodeBlock opts={opts}>{children}</CodeBlock>;
         }
