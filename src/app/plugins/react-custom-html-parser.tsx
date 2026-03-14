@@ -409,6 +409,32 @@ export const getReactCustomHtmlParser = (
           );
         }
 
+        if (name === 'table') {
+          return (
+            <div className={css.TableWrapper}>
+              <table {...props} className={classNames(props.className, css.Table)}>
+                {domToReact(children, opts)}
+              </table>
+            </div>
+          );
+        }
+
+        if (name === 'th') {
+          return (
+            <th {...props} className={classNames(props.className, css.TableHeaderCell)}>
+              {domToReact(children, opts)}
+            </th>
+          );
+        }
+
+        if (name === 'td') {
+          return (
+            <td {...props} className={classNames(props.className, css.TableCell)}>
+              {domToReact(children, opts)}
+            </td>
+          );
+        }
+
         if (name === 'code') {
           if (parent && 'name' in parent && parent.name === 'pre') {
             const codeReact = domToReact(children, opts);

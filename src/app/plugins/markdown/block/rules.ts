@@ -21,6 +21,96 @@ export const CodeBlockRule: BlockMDRule = {
   },
 };
 
+const isTableDelimiterCell = (cell: string): boolean => {
+  const trimmed = cell.trim();
+  if (trimmed === '') return false;
+  // GFM table delimiter cell: --- , :--- , ---: , :---:
+  return /^:?-{3,}:?$/.test(trimmed);
+};
+
+const splitTableRow = (rowText: string): string[] => {
+  const trimmed = rowText.trim();
+  const raw = trimmed.startsWith('|') ? trimmed.slice(1) : trimmed;
+  const content = raw.endsWith('|') ? raw.slice(0, -1) : raw;
+
+  const cells: string[] = [];
+  let current = '';
+
+  for (let i = 0; i < content.length; i += 1) {
+    const ch = content[i];
+    const next = content[i + 1];
+    if (ch === '\\' && next === '|') {
+      current += '|';
+      i += 1;
+      continue;
+    }
+    if (ch === '|') {
+      cells.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  cells.push(current);
+  return cells;
+};
+
+const TABLE_REG_G =
+  /^([^\n]*\|[^\n]*)\r?\n([ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*)\r?\n((?:(?:[^\n]*\|[^\n]*)(?:\r?\n|$))*)/gm;
+export const TableRule: BlockMDRule = {
+  match: (text) => {
+    TABLE_REG_G.lastIndex = 0;
+    for (let match = TABLE_REG_G.exec(text); match !== null; match = TABLE_REG_G.exec(text)) {
+      const headerCells = splitTableRow(match[1]);
+      const delimiterCells = splitTableRow(match[2]);
+      if (headerCells.length < 2 || delimiterCells.length < 2) continue;
+      if (!delimiterCells.every(isTableDelimiterCell)) continue;
+      return match;
+    }
+    return null;
+  },
+  html: (match, parseInline) => {
+    const [, headerLine, delimiterLine, bodyBlock = ''] = match;
+
+    const headerCells = splitTableRow(headerLine);
+    const delimiterCells = splitTableRow(delimiterLine);
+    if (headerCells.length < 2 || delimiterCells.length < 2) return match[0];
+    if (!delimiterCells.every(isTableDelimiterCell)) return match[0];
+
+    const bodyLines = bodyBlock
+      .replace(/\r?\n$/, '')
+      .split(/\r?\n/)
+      .filter((l) => l.trim() !== '');
+
+    const colCount = Math.max(headerCells.length, delimiterCells.length);
+
+    const thead = `<thead><tr>${Array.from({ length: colCount })
+      .map((_, i) => {
+        const rawCell = (headerCells[i] ?? '').trim();
+        const content = parseInline ? parseInline(rawCell) : rawCell;
+        return `<th>${content}</th>`;
+      })
+      .join('')}</tr></thead>`;
+
+    const tbodyRows = bodyLines
+      .map((line) => {
+        const rowCells = splitTableRow(line);
+        const tds = Array.from({ length: colCount })
+          .map((_, i) => {
+            const rawCell = (rowCells[i] ?? '').trim();
+            const content = parseInline ? parseInline(rawCell) : rawCell;
+            return `<td>${content}</td>`;
+          })
+          .join('');
+        return `<tr>${tds}</tr>`;
+      })
+      .join('');
+
+    const tbody = tbodyRows ? `<tbody>${tbodyRows}</tbody>` : '';
+    return `<table>${thead}${tbody}</table>`;
+  },
+};
+
 const BLOCKQUOTE_MD_1 = '>';
 const QUOTE_LINE_PREFIX = /^> */;
 const BLOCKQUOTE_TRAILING_NEWLINE = /\n$/;

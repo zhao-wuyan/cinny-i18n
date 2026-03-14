@@ -248,3 +248,42 @@ export const highlightText = style([
     color: 'black',
   },
 ]);
+
+export const TableWrapper = style([
+  DefaultReset,
+  MarginSpaced,
+  {
+    overflowX: 'auto',
+    maxWidth: '100%',
+  },
+]);
+
+export const Table = style([
+  DefaultReset,
+  {
+    borderCollapse: 'collapse',
+    borderSpacing: 0,
+    width: 'max-content',
+    maxWidth: '100%',
+  },
+]);
+
+const BaseTableCell = style([
+  DefaultReset,
+  {
+    padding: `${config.space.S100} ${config.space.S200}`,
+    border: `${config.borderWidth.B300} solid ${color.SurfaceVariant.ContainerLine}`,
+    verticalAlign: 'top',
+  },
+]);
+
+export const TableHeaderCell = style([
+  BaseTableCell,
+  {
+    fontWeight: config.fontWeight.W500,
+    backgroundColor: color.SurfaceVariant.Container,
+    color: color.SurfaceVariant.OnContainer,
+  },
+]);
+
+export const TableCell = style([BaseTableCell]);
