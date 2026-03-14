@@ -293,11 +293,18 @@ function AutoScrollTableWrapper({ children }: { children: React.ReactNode }) {
       if (!table) return;
       const body = table.querySelectorAll('tbody tr');
       const rows = body.length || table.querySelectorAll('tr').length;
-      if (rows <= 50) return;
+      if (rows <= 50) {
+        el.style.maxHeight = '';
+        el.style.overflowY = '';
+        return;
+      }
       const headH = table.querySelector('thead')?.getBoundingClientRect().height ?? 0;
       const rowEl = (body[0] as HTMLElement | undefined) ?? (table.querySelector('tr') as HTMLElement | null);
       const rowH = rowEl?.getBoundingClientRect().height ?? 0;
-      if (rowH > 0) el.style.maxHeight = `${Math.ceil(headH + rowH * 50) + 2}px`;
+      if (rowH > 0) {
+        el.style.maxHeight = `${Math.ceil(headH + rowH * 50) + 2}px`;
+        el.style.overflowY = 'auto';
+      }
     });
     return () => cancelAnimationFrame(raf);
   }, []);

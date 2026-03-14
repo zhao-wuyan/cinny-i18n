@@ -253,7 +253,8 @@ export const TableWrapper = style([
   DefaultReset,
   MarginSpaced,
   {
-    overflow: 'auto',
+    overflowX: 'auto',
+    overflowY: 'hidden',
     maxWidth: '100%',
     scrollbarWidth: 'none',
     selectors: {
