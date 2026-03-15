@@ -15,6 +15,8 @@ import {
   setActiveSessionId,
 } from '../../../state/sessions';
 
+const stripUrlScheme = (url: string): string => url.replace(/^https?:\/\//, '');
+
 export function AccountSwitchTab() {
   const { t } = useTranslation();
   const { hashRouter } = useClientConfig();
@@ -90,11 +92,17 @@ export function AccountSwitchTab() {
                 escapeDeactivates: stopPropagation,
               }}
             >
-              <Menu style={{ maxWidth: toRem(260), width: '100vw' }}>
-                <Header size="300" style={{ padding: `0 ${config.space.S200}` }}>
+              <Menu style={{ maxWidth: toRem(340), width: '100vw' }}>
+                <Header
+                  size="300"
+                  style={{
+                    padding: `0 ${config.space.S200}`,
+                    borderBottomWidth: config.borderWidth.B300,
+                  }}
+                >
                   <Text size="L400">{t('pages:client.sidebar.switch_account')}</Text>
                 </Header>
-                <Box direction="Column" gap="100" style={{ padding: config.space.S100, paddingTop: 0 }}>
+                <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
                   {sessions.map((session) => {
                     const sessionId = getSessionId(session);
                     const current = activeSessionId === sessionId;
@@ -109,11 +117,11 @@ export function AccountSwitchTab() {
                         after={current ? <Icon size="100" src={Icons.Check} /> : undefined}
                       >
                         <Box direction="Column" gap="100">
-                          <Text as="span" size="T300" truncate>
+                          <Text as="span" size="T300" truncate title={session.userId}>
                             {session.userId}
                           </Text>
-                          <Text as="span" size="T200" priority="300" truncate>
-                            {session.baseUrl}
+                          <Text as="span" size="T200" priority="300" truncate title={session.baseUrl}>
+                            {stripUrlScheme(session.baseUrl)}
                           </Text>
                         </Box>
                       </MenuItem>
