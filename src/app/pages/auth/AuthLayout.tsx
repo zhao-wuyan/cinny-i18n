@@ -125,7 +125,8 @@ export function AuthLayout() {
           }),
           search: location.search,
           hash: location.hash,
-        }
+        },
+        { replace: true }
       );
     },
     [navigate, location, discoveryState, server, discoverServer]

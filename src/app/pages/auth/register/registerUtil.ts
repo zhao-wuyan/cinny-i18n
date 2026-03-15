@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LoginPathSearchParams } from '../../paths';
 import { ErrorCode } from '../../../cs-errorcode';
+import { isAddAccountFlow } from '../../../utils/addAccountFlow';
 import {
   deleteAfterLoginRedirectPath,
   getAfterLoginRedirectPath,
@@ -17,21 +18,6 @@ import {
 import { getHomePath, getLoginPath, withSearchParam } from '../../pathUtils';
 import { getMxIdLocalPart, getMxIdServer } from '../../../utils/matrix';
 import { upsertSession } from '../../../state/sessions';
-
-const isAddAccountFlow = (): boolean => {
-  try {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('addAccount') === '1') return true;
-
-    const hash = (url.hash || window.location.hash).replace(/^#/, '');
-    const queryIndex = hash.indexOf('?');
-    if (queryIndex === -1) return false;
-    const hashSearch = hash.slice(queryIndex + 1);
-    return new URLSearchParams(hashSearch).get('addAccount') === '1';
-  } catch {
-    return false;
-  }
-};
 
 export enum RegisterError {
   UserTaken = 'UserTaken',
