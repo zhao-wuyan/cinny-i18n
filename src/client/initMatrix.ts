@@ -3,6 +3,7 @@ import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from
 import { cryptoCallbacks } from './secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 import { pushSessionToSW } from '../sw-session';
+import { getSessionStoreName, removeActiveSession } from '../app/state/sessions';
 
 type Session = {
   baseUrl: string;
@@ -12,13 +13,14 @@ type Session = {
 };
 
 export const initClient = async (session: Session): Promise<MatrixClient> => {
+  const storeName = getSessionStoreName(session);
   const indexedDBStore = new IndexedDBStore({
     indexedDB: global.indexedDB,
     localStorage: global.localStorage,
-    dbName: 'web-sync-store',
+    dbName: storeName.sync,
   });
 
-  const legacyCryptoStore = new IndexedDBCryptoStore(global.indexedDB, 'crypto-store');
+  const legacyCryptoStore = new IndexedDBCryptoStore(global.indexedDB, storeName.crypto);
 
   const mx = createClient({
     baseUrl: session.baseUrl,
@@ -33,7 +35,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   });
 
   await indexedDBStore.startup();
-  await mx.initRustCrypto();
+  await mx.initRustCrypto({ cryptoDatabasePrefix: storeName.rustCrypto });
 
   mx.setMaxListeners(50);
 
@@ -62,11 +64,13 @@ export const logoutClient = async (mx: MatrixClient) => {
     // ignore if failed to logout
   }
   await mx.clearStores();
-  window.localStorage.clear();
+  clearNavToActivePathStore(mx.getSafeUserId());
+  removeActiveSession();
   window.location.reload();
 };
 
 export const clearLoginData = async () => {
+  pushSessionToSW();
   const dbs = await window.indexedDB.databases();
 
   dbs.forEach((idbInfo) => {

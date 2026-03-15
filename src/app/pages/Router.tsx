@@ -66,9 +66,9 @@ import { HomeCreateRoom } from './client/home/CreateRoom';
 import { Create } from './client/create';
 import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
-import { getFallbackSession } from '../state/sessions';
 import { CallStatusRenderer } from './CallStatusRenderer';
 import { CallEmbedProvider } from '../components/CallEmbedProvider';
+import { getActiveSession } from '../state/sessions';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -78,15 +78,30 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
       <Route
         index
         loader={() => {
-          if (getFallbackSession()) return redirect(getHomePath());
+          if (getActiveSession()) return redirect(getHomePath());
           const afterLoginPath = getAppPathFromHref(getOriginBaseUrl(), window.location.href);
           if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
           return redirect(getLoginPath());
         }}
       />
       <Route
-        loader={() => {
-          if (getFallbackSession()) {
+        loader={({ request }) => {
+          const addAccount = (() => {
+            try {
+              const url = new URL(request.url);
+              if (url.searchParams.get('addAccount') === '1') return true;
+
+              const hash = (url.hash || window.location.hash).replace(/^#/, '');
+              const queryIndex = hash.indexOf('?');
+              if (queryIndex === -1) return false;
+              const hashSearch = hash.slice(queryIndex + 1);
+              return new URLSearchParams(hashSearch).get('addAccount') === '1';
+            } catch {
+              return false;
+            }
+          })();
+
+          if (!addAccount && getActiveSession()) {
             return redirect(getHomePath());
           }
 
@@ -106,7 +121,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
 
       <Route
         loader={() => {
-          const session = getFallbackSession();
+          const session = getActiveSession();
           if (!session) {
             const afterLoginPath = getAppPathFromHref(
               getOriginBaseUrl(hashRouter),

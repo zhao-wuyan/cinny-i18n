@@ -6,6 +6,7 @@ import { MatrixId } from './MatrixId';
 import { Profile } from './Profile';
 import { ContactInformation } from './ContactInfo';
 import { IgnoredUserList } from './IgnoredUserList';
+import { AccountSwitcher } from './AccountSwitcher';
 
 type AccountProps = {
   requestClose: () => void;
@@ -33,6 +34,7 @@ export function Account({ requestClose }: AccountProps) {
           <PageContent>
             <Box direction="Column" gap="700">
               <Profile />
+              <AccountSwitcher />
               <MatrixId />
               <ContactInformation />
               <IgnoredUserList />

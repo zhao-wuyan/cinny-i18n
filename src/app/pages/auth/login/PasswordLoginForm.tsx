@@ -18,7 +18,7 @@ import {
   config,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { MatrixError } from 'matrix-js-sdk';
 import { useTranslation } from 'react-i18next';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../../utils/matrix';
@@ -36,7 +36,7 @@ import {
 } from './loginUtil';
 import { PasswordInput } from '../../../components/password-input';
 import { FieldError } from '../FiledError';
-import { getResetPasswordPath } from '../../pathUtils';
+import { getResetPasswordPath, withSearchParam } from '../../pathUtils';
 import { stopPropagation } from '../../../utils/keyboard';
 
 function UsernameHint({ server }: { server: string }) {
@@ -116,6 +116,8 @@ export function PasswordLoginForm({ defaultUsername, defaultEmail }: PasswordLog
   const { t } = useTranslation();
   const server = useAuthServer();
   const clientConfig = useClientConfig();
+  const [searchParams] = useSearchParams();
+  const addAccount = searchParams.get('addAccount') === '1';
 
   const serverDiscovery = useAutoDiscoveryInfo();
   const baseUrl = serverDiscovery['m.homeserver'].base_url;
@@ -253,7 +255,15 @@ export function PasswordLoginForm({ defaultUsername, defaultEmail }: PasswordLog
           )}
           <Box grow="Yes" shrink="No" justifyContent="End">
             <Text as="span" size="T200" priority="400" align="Right">
-              <Link to={getResetPasswordPath(server)}>{t('pages:auth.login.forget_password')}</Link>
+              <Link
+                to={
+                  addAccount
+                    ? withSearchParam(getResetPasswordPath(server), { addAccount: '1' })
+                    : getResetPasswordPath(server)
+                }
+              >
+                {t('pages:auth.login.forget_password')}
+              </Link>
             </Text>
           </Box>
         </Box>

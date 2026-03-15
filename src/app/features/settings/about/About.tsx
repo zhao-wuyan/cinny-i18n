@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Text, IconButton, Icon, Icons, Scroll, Button, config, toRem } from 'folds';
+import {
+  Box,
+  Text,
+  IconButton,
+  Icon,
+  Icons,
+  Scroll,
+  Button,
+  config,
+  toRem,
+  Overlay,
+  OverlayBackdrop,
+  OverlayCenter,
+  Dialog,
+  Header,
+} from 'folds';
+import FocusTrap from 'focus-trap-react';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import CinnySVG from '../../../../../public/res/svg/cinny.svg';
-import { clearCacheAndReload } from '../../../../client/initMatrix';
+import { clearCacheAndReload, clearLoginData } from '../../../../client/initMatrix';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { stopPropagation } from '../../../utils/keyboard';
 
 type AboutProps = {
   requestClose: () => void;
@@ -15,6 +32,7 @@ type AboutProps = {
 export function About({ requestClose }: AboutProps) {
   const { t } = useTranslation();
   const mx = useMatrixClient();
+  const [resetOpen, setResetOpen] = useState(false);
 
   return (
     <Page>
@@ -107,6 +125,22 @@ export function About({ requestClose }: AboutProps) {
                       </Button>
                     }
                   />
+                  <SettingTile
+                    title={t('features:settings.about.reset_app')}
+                    description={t('features:settings.about.reset_app_desc')}
+                    after={
+                      <Button
+                        onClick={() => setResetOpen(true)}
+                        variant="Critical"
+                        fill="None"
+                        size="300"
+                        radii="300"
+                        outlined
+                      >
+                        <Text size="B300">{t('components:reset')}</Text>
+                      </Button>
+                    }
+                  />
                 </SequenceCard>
               </Box>
               <Box direction="Column" gap="100">
@@ -157,6 +191,53 @@ export function About({ requestClose }: AboutProps) {
           </PageContent>
         </Scroll>
       </Box>
+      {resetOpen && (
+        <Overlay open backdrop={<OverlayBackdrop />}>
+          <OverlayCenter>
+            <FocusTrap
+              focusTrapOptions={{
+                initialFocus: false,
+                onDeactivate: () => setResetOpen(false),
+                clickOutsideDeactivates: true,
+                escapeDeactivates: stopPropagation,
+              }}
+            >
+              <Dialog variant="Surface">
+                <Header
+                  style={{
+                    padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+                    borderBottomWidth: config.borderWidth.B300,
+                  }}
+                  variant="Surface"
+                  size="500"
+                >
+                  <Box grow="Yes">
+                    <Text size="H4">{t('features:settings.about.reset_app')}</Text>
+                  </Box>
+                  <IconButton size="300" onClick={() => setResetOpen(false)} radii="300">
+                    <Icon src={Icons.Cross} />
+                  </IconButton>
+                </Header>
+                <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+                  <Text priority="400">{t('features:settings.about.reset_app_confirm')}</Text>
+                  <Box direction="Column" gap="200">
+                    <Button variant="Critical" onClick={() => clearLoginData()}>
+                      <Text size="B400">{t('components:reset')}</Text>
+                    </Button>
+                    <Button
+                      variant="Secondary"
+                      fill="Soft"
+                      onClick={() => setResetOpen(false)}
+                    >
+                      <Text size="B400">{t('components:cancel')}</Text>
+                    </Button>
+                  </Box>
+                </Box>
+              </Dialog>
+            </FocusTrap>
+          </OverlayCenter>
+        </Overlay>
+      )}
     </Page>
   );
 }

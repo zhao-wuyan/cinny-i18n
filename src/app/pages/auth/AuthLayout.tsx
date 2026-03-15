@@ -99,9 +99,13 @@ export function AuthLayout() {
   useEffect(() => {
     if (!urlEncodedServer || tryDecodeURIComponent(urlEncodedServer) !== server) {
       navigate(
-        generatePath(currentAuthPath(location.pathname), {
-          server: encodeURIComponent(server),
-        }),
+        {
+          pathname: generatePath(currentAuthPath(location.pathname), {
+            server: encodeURIComponent(server),
+          }),
+          search: location.search,
+          hash: location.hash,
+        },
         { replace: true }
       );
     }
@@ -115,7 +119,13 @@ export function AuthLayout() {
         return;
       }
       navigate(
-        generatePath(currentAuthPath(location.pathname), { server: encodeURIComponent(newServer) })
+        {
+          pathname: generatePath(currentAuthPath(location.pathname), {
+            server: encodeURIComponent(newServer),
+          }),
+          search: location.search,
+          hash: location.hash,
+        }
       );
     },
     [navigate, location, discoveryState, server, discoverServer]

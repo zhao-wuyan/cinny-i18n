@@ -2,7 +2,7 @@ import { Box, Text } from 'folds';
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getLoginPath } from '../../pathUtils';
+import { getLoginPath, withSearchParam } from '../../pathUtils';
 import { useAuthServer } from '../../../hooks/useAuthServer';
 import { PasswordResetForm } from './PasswordResetForm';
 import { ResetPasswordPathSearchParams } from '../../paths';
@@ -21,6 +21,7 @@ export function ResetPassword() {
   const { t } = useTranslation();
   const server = useAuthServer();
   const [searchParams] = useSearchParams();
+  const addAccount = searchParams.get('addAccount') === '1';
   const resetPasswordSearchParams = useResetPasswordSearchParams(searchParams);
 
   return (
@@ -32,7 +33,14 @@ export function ResetPassword() {
       <span data-spacing-node />
 
       <Text align="Center">
-        {t('pages:auth.reset-password.remember_your_password')} <Link to={getLoginPath(server)}>{t('pages:auth.reset-password.login')}</Link>
+        {t('pages:auth.reset-password.remember_your_password')}{' '}
+        <Link
+          to={
+            addAccount ? withSearchParam(getLoginPath(server), { addAccount: '1' }) : getLoginPath(server)
+          }
+        >
+          {t('pages:auth.reset-password.login')}
+        </Link>
       </Text>
     </Box>
   );

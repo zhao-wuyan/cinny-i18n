@@ -41,16 +41,20 @@ export function Login() {
   const { hashRouter } = useClientConfig();
   const { loginFlows } = useAuthFlows();
   const [searchParams] = useSearchParams();
+  const addAccount = searchParams.get('addAccount') === '1';
   const loginSearchParams = useLoginSearchParams(searchParams);
-  const ssoRedirectUrl = usePathWithOrigin(getLoginPath(server));
+  const ssoRedirectUrl = usePathWithOrigin(
+    addAccount ? withSearchParam(getLoginPath(server), { addAccount: '1' }) : getLoginPath(server)
+  );
   const loginTokenForHashRouter = getLoginTokenSearchParam();
   const absoluteLoginPath = usePathWithOrigin(getLoginPath(server));
 
   if (hashRouter?.enabled && loginTokenForHashRouter) {
+    const nextSearchParams = addAccount
+      ? { loginToken: loginTokenForHashRouter, addAccount: '1' }
+      : { loginToken: loginTokenForHashRouter };
     window.location.replace(
-      withSearchParam(absoluteLoginPath, {
-        loginToken: loginTokenForHashRouter,
-      })
+      withSearchParam(absoluteLoginPath, nextSearchParams)
     );
   }
 
@@ -94,7 +98,16 @@ export function Login() {
         </>
       )}
       <Text align="Center">
-        {t('pages:auth.login.do_not_have_an_account')} <Link to={getRegisterPath(server)}>{t('pages:auth.login.register')}</Link>
+        {t('pages:auth.login.do_not_have_an_account')}{' '}
+        <Link
+          to={
+            addAccount
+              ? withSearchParam(getRegisterPath(server), { addAccount: '1' })
+              : getRegisterPath(server)
+          }
+        >
+          {t('pages:auth.login.register')}
+        </Link>
       </Text>
     </Box>
   );

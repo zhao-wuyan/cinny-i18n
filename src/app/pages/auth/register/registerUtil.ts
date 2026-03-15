@@ -16,7 +16,22 @@ import {
 } from '../../afterLoginRedirectPath';
 import { getHomePath, getLoginPath, withSearchParam } from '../../pathUtils';
 import { getMxIdLocalPart, getMxIdServer } from '../../../utils/matrix';
-import { setFallbackSession } from '../../../state/sessions';
+import { upsertSession } from '../../../state/sessions';
+
+const isAddAccountFlow = (): boolean => {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('addAccount') === '1') return true;
+
+    const hash = (url.hash || window.location.hash).replace(/^#/, '');
+    const queryIndex = hash.indexOf('?');
+    if (queryIndex === -1) return false;
+    const hashSearch = hash.slice(queryIndex + 1);
+    return new URLSearchParams(hashSearch).get('addAccount') === '1';
+  } catch {
+    return false;
+  }
+};
 
 export enum RegisterError {
   UserTaken = 'UserTaken',
@@ -119,10 +134,20 @@ export const useRegisterComplete = (data?: CustomRegisterResponse) => {
       const deviceId = response.device_id;
 
       if (accessToken && deviceId) {
-        setFallbackSession(accessToken, deviceId, userId, baseUrl);
+        upsertSession({
+          accessToken,
+          deviceId,
+          userId,
+          baseUrl,
+        });
         const afterLoginRedirectPath = getAfterLoginRedirectPath();
         deleteAfterLoginRedirectPath();
-        navigate(afterLoginRedirectPath ?? getHomePath(), { replace: true });
+        const nextPath = afterLoginRedirectPath ?? getHomePath();
+        navigate(nextPath, { replace: true });
+
+        if (isAddAccountFlow()) {
+          setTimeout(() => window.location.reload(), 0);
+        }
       } else {
         const username = getMxIdLocalPart(userId);
         const userServer = getMxIdServer(userId);

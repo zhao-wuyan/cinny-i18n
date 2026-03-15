@@ -10,7 +10,22 @@ import {
   getAfterLoginRedirectPath,
 } from '../../afterLoginRedirectPath';
 import { getHomePath } from '../../pathUtils';
-import { setFallbackSession } from '../../../state/sessions';
+import { upsertSession } from '../../../state/sessions';
+
+const isAddAccountFlow = (): boolean => {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('addAccount') === '1') return true;
+
+    const hash = (url.hash || window.location.hash).replace(/^#/, '');
+    const queryIndex = hash.indexOf('?');
+    if (queryIndex === -1) return false;
+    const hashSearch = hash.slice(queryIndex + 1);
+    return new URLSearchParams(hashSearch).get('addAccount') === '1';
+  } catch {
+    return false;
+  }
+};
 
 export enum GetBaseUrlError {
   NotAllow = 'NotAllow',
@@ -114,10 +129,20 @@ export const useLoginComplete = (data?: CustomLoginResponse) => {
   useEffect(() => {
     if (data) {
       const { response: loginRes, baseUrl: loginBaseUrl } = data;
-      setFallbackSession(loginRes.access_token, loginRes.device_id, loginRes.user_id, loginBaseUrl);
+      upsertSession({
+        accessToken: loginRes.access_token,
+        deviceId: loginRes.device_id,
+        userId: loginRes.user_id,
+        baseUrl: loginBaseUrl,
+      });
       const afterLoginRedirectUrl = getAfterLoginRedirectPath();
       deleteAfterLoginRedirectPath();
-      navigate(afterLoginRedirectUrl ?? getHomePath(), { replace: true });
+      const nextPath = afterLoginRedirectUrl ?? getHomePath();
+      navigate(nextPath, { replace: true });
+
+      if (isAddAccountFlow()) {
+        setTimeout(() => window.location.reload(), 0);
+      }
     }
   }, [data, navigate]);
 };

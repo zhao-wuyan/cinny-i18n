@@ -223,7 +223,8 @@
 			"join_with_address": "Join with Address",
 			"build_a_space_for_your_community": "Build a space for your community.",
 			"become_a_part_of_existing_community": "Become a part of existing community.",
-			"search": "Search"
+			"search": "Search",
+			"switch_account": "Switch Account"
 		}
 	},
 	"heating_up": "Heating up",

@@ -35,8 +35,10 @@ import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
-import { getFallbackSession } from '../../state/sessions';
+import { getActiveSession, removeActiveSession } from '../../state/sessions';
 import { AutoDiscovery } from './AutoDiscovery';
+import { pushSessionToSW } from '../../../sw-session';
+import { clearNavToActivePathStore } from '../../state/navToActivePath';
 
 function ClientRootLoading() {
   const { t } = useTranslation();
@@ -107,7 +109,9 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
                       logoutClient(mx);
                       return;
                     }
-                    clearLoginData();
+                    pushSessionToSW();
+                    removeActiveSession();
+                    window.location.reload();
                   }}
                   size="300"
                   radii="300"
@@ -130,9 +134,12 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
+      pushSessionToSW();
+      const safeUserId = mx?.getSafeUserId();
       mx?.stopClient();
       await mx?.clearStores();
-      window.localStorage.clear();
+      if (safeUserId) clearNavToActivePathStore(safeUserId);
+      removeActiveSession();
       window.location.reload();
     };
 
@@ -149,11 +156,11 @@ type ClientRootProps = {
 export function ClientRoot({ children }: ClientRootProps) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const { baseUrl, userId } = getFallbackSession() ?? {};
+  const { baseUrl, userId } = getActiveSession() ?? {};
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(() => {
-      const session = getFallbackSession();
+      const session = getActiveSession();
       if (!session) {
         throw new Error('No session Found!');
       }
@@ -210,11 +217,36 @@ export function ClientRoot({ children }: ClientRootProps) {
                   {startState.status === AsyncStatus.Error && (
                     <Text>{t('pages:client.failed_to_start', { message: startState.error.message })}</Text>
                   )}
-                  <Button variant="Critical" onClick={mx ? () => startMatrix(mx) : loadMatrix}>
-                    <Text as="span" size="B400">
-                      {t('pages:client.retry')}
-                    </Text>
-                  </Button>
+                  <Box direction="Column" gap="200">
+                    <Button variant="Secondary" fill="Soft" onClick={mx ? () => startMatrix(mx) : loadMatrix}>
+                      <Text as="span" size="B400">
+                        {t('pages:client.retry')}
+                      </Text>
+                    </Button>
+                    <Button
+                      variant="Critical"
+                      fill="None"
+                      outlined
+                      onClick={() => {
+                        if (mx) {
+                          logoutClient(mx);
+                          return;
+                        }
+                        pushSessionToSW();
+                        removeActiveSession();
+                        window.location.reload();
+                      }}
+                    >
+                      <Text as="span" size="B400">
+                        {t('pages:client.logout')}
+                      </Text>
+                    </Button>
+                    <Button variant="Critical" onClick={() => clearLoginData()}>
+                      <Text as="span" size="B400">
+                        {t('features:settings.about.reset_app')}
+                      </Text>
+                    </Button>
+                  </Box>
                 </Box>
               </Dialog>
             </Box>

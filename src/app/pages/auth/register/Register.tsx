@@ -10,7 +10,7 @@ import { PasswordRegisterForm, SUPPORTED_REGISTER_STAGES } from '../register/Pas
 import { OrDivider } from '../OrDivider';
 import { SSOLogin } from '../SSOLogin';
 import { SupportedUIAFlowsLoader } from '../../../components/SupportedUIAFlowsLoader';
-import { getLoginPath } from '../../pathUtils';
+import { getLoginPath, withSearchParam } from '../../pathUtils';
 import { usePathWithOrigin } from '../../../hooks/usePathWithOrigin';
 import { RegisterPathSearchParams } from '../../paths';
 
@@ -29,11 +29,14 @@ export function Register() {
   const server = useAuthServer();
   const { loginFlows, registerFlows } = useAuthFlows();
   const [searchParams] = useSearchParams();
+  const addAccount = searchParams.get('addAccount') === '1';
   const registerSearchParams = useRegisterSearchParams(searchParams);
   const { sso } = useParsedLoginFlows(loginFlows.flows);
 
   // redirect to /login because only that path handle m.login.token
-  const ssoRedirectUrl = usePathWithOrigin(getLoginPath(server));
+  const ssoRedirectUrl = usePathWithOrigin(
+    addAccount ? withSearchParam(getLoginPath(server), { addAccount: '1' }) : getLoginPath(server)
+  );
 
   return (
     <Box direction="Column" gap="500">
@@ -93,7 +96,14 @@ export function Register() {
         </>
       )}
       <Text align="Center">
-        {t('pages:auth.register.already_have_an_account')} <Link to={getLoginPath(server)}>{t('pages:auth.register.login')}</Link>
+        {t('pages:auth.register.already_have_an_account')}{' '}
+        <Link
+          to={
+            addAccount ? withSearchParam(getLoginPath(server), { addAccount: '1' }) : getLoginPath(server)
+          }
+        >
+          {t('pages:auth.register.login')}
+        </Link>
       </Text>
     </Box>
   );
