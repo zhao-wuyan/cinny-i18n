@@ -115,8 +115,12 @@ export function AccountSwitchTab() {
                         disabled={current}
                         onClick={() => handleSwitchAccount(session)}
                         after={current ? <Icon size="100" src={Icons.Check} /> : undefined}
+                        style={{
+                          height: 'auto',
+                          padding: `${config.space.S200} ${config.space.S200}`,
+                        }}
                       >
-                        <Box direction="Column" gap="100">
+                        <Box direction="Column" gap="0" grow="Yes">
                           <Text as="span" size="T300" truncate title={session.userId}>
                             {session.userId}
                           </Text>
