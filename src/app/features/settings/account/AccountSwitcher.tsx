@@ -21,8 +21,7 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { stopPropagation } from '../../../utils/keyboard';
-import { useClientConfig } from '../../../hooks/useClientConfig';
-import { getHomePath, getLoginPath, getOriginBaseUrl, withOriginBaseUrl, withSearchParam } from '../../../pages/pathUtils';
+import { getLoginPath, getOriginBaseUrl, withOriginBaseUrl, withSearchParam } from '../../../pages/pathUtils';
 import {
   Session,
   getActiveSessionId,
@@ -35,20 +34,22 @@ import {
 export function AccountSwitcher() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { hashRouter } = useClientConfig();
   const [removeTarget, setRemoveTarget] = useState<Session>();
 
   const [sessions, setSessions] = useState(() => getSessions());
   const activeSessionId = getActiveSessionId();
 
-  const homeUrl = useMemo(
-    () => withOriginBaseUrl(getOriginBaseUrl(hashRouter), getHomePath()),
-    [hashRouter]
-  );
-
   const refreshSessions = useCallback(() => {
     setSessions(getSessions());
   }, []);
+
+  const reloadToSafeRoute = () => {
+    // 切换账号/删除当前账号时，需要触发“文档级 reload”来让 ClientRoot 重新初始化 MatrixClient。
+    // HashRouter 下如果只替换 hash（例如 /#/home），浏览器不会 reload，导致看起来“切换没反应”。
+    const safeRootUrl = withOriginBaseUrl(getOriginBaseUrl(), '/');
+    const safeReloadUrl = withSearchParam(safeRootUrl, { reload: Date.now().toString() });
+    window.location.replace(safeReloadUrl);
+  };
 
   const handleAddAccount = () => {
     navigate(withSearchParam(getLoginPath(), { addAccount: '1' }));
@@ -57,7 +58,7 @@ export function AccountSwitcher() {
   const handleSwitchAccount = (session: Session) => {
     setActiveSessionId(getSessionId(session));
     // 切换账号时，先落到安全路由（避免把旧 roomId/spaceId 残留到新账号），再触发完整 reload。
-    window.location.replace(homeUrl);
+    reloadToSafeRoute();
   };
 
   const handleRemoveAccount = (session: Session) => {
@@ -72,7 +73,7 @@ export function AccountSwitcher() {
     setRemoveTarget(undefined);
 
     if (wasActive) {
-      window.location.replace(homeUrl);
+      reloadToSafeRoute();
       return;
     }
 

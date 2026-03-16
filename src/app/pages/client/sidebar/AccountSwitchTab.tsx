@@ -1,11 +1,10 @@
-import React, { MouseEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { MouseEventHandler, useCallback, useEffect, useState } from 'react';
 import { Box, Header, Icon, Icons, Menu, MenuItem, PopOut, RectCords, Text, config, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useTranslation } from 'react-i18next';
 import { SidebarAvatar, SidebarItem, SidebarItemTooltip } from '../../../components/sidebar';
-import { useClientConfig } from '../../../hooks/useClientConfig';
 import { stopPropagation } from '../../../utils/keyboard';
-import { getHomePath, getOriginBaseUrl, withOriginBaseUrl } from '../../pathUtils';
+import { getOriginBaseUrl, withOriginBaseUrl, withSearchParam } from '../../pathUtils';
 import {
   Session,
   getActiveSessionId,
@@ -19,18 +18,12 @@ const stripUrlScheme = (url: string): string => url.replace(/^https?:\/\//, '');
 
 export function AccountSwitchTab() {
   const { t } = useTranslation();
-  const { hashRouter } = useClientConfig();
 
   const [sessions, setSessions] = useState(() => getSessions());
   const activeSessionId = getActiveSessionId();
 
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const open = !!menuAnchor;
-
-  const homeUrl = useMemo(
-    () => withOriginBaseUrl(getOriginBaseUrl(hashRouter), getHomePath()),
-    [hashRouter]
-  );
 
   const refreshSessions = useCallback(() => {
     setSessions(getSessions());
@@ -63,7 +56,9 @@ export function AccountSwitchTab() {
 
   const handleSwitchAccount = (session: Session) => {
     setActiveSessionId(getSessionId(session));
-    window.location.replace(homeUrl);
+    const safeRootUrl = withOriginBaseUrl(getOriginBaseUrl(), '/');
+    const safeReloadUrl = withSearchParam(safeRootUrl, { reload: Date.now().toString() });
+    window.location.replace(safeReloadUrl);
   };
 
   return (
